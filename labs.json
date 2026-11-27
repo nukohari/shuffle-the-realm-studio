@@ -4,5 +4,11 @@
     "title": "Combined Attack v2",
     "path": "labs/archer-combined",
     "parts": 10
+  },
+  {
+    "character": "Goblin Archer",
+    "title": "Death Animation v1",
+    "path": "labs/archer-death",
+    "parts": 7
   }
 ]
