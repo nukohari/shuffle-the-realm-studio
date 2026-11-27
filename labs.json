@@ -22,5 +22,11 @@
     "title": "Combined Animation Lab v7",
     "path": "labs/king-combined",
     "parts": 1
+  },
+  {
+    "character": "Bone Maw",
+    "title": "Combined Animation Lab v1",
+    "path": "labs/bone-maw-combined",
+    "parts": 1
   }
 ]
