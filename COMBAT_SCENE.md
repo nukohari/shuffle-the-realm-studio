@@ -1,0 +1,3 @@
+# Shared combat scene
+
+`combat-scene.json` defines the 460×294 logical scene at 2× canvas resolution. The studio injects it as `COMBAT_SCENE` into published chunked HTML labs. New labs should read this object, use foot anchors for characters, and derive shadows, rings, effects and foreground placement from the same coordinate system. Preserve approved attack presets. Standalone fallbacks should mirror the JSON. The current values are sourced from Combined Attack v2; ring dimensions are provisional until live-game verification. The live game has not been migrated or verified against this configuration.
