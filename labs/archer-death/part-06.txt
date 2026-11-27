@@ -18,14 +18,37 @@ function setState(t){ $('state').textContent=t; $('play').textContent=playing?'P
 const scene = typeof COMBAT_SCENE !== 'undefined' ? COMBAT_SCENE : {"width":460,"height":294,"pixelRatio":2,"iron":{"x":44,"y":98,"w":130,"h":182},"ironShadow":{"x":57,"y":268,"w":104,"h":24},"archer":{"x":320,"y":285,"h":134},"archerShadow":{"dx":-48,"dy":-13,"w":96,"h":23},"ring":{"dx":0,"dy":-6,"rx":30,"ry":7},"fade":{"y":256,"h":38}};
 const unit=scene.pixelRatio;
 const base = {x:scene.archer.x*unit,y:scene.archer.y*unit,h:scene.archer.h*unit};
+// Hand-traced, non-overlapping anatomical regions in the original 700x642 sprite.
 const archerPieces = [
-  {name:'hood', sx:255, sy:0, sw:210, sh:180, vx:20, vy:-105, spin:60},
-  {name:'torso', sx:205, sy:155, sw:245, sh:205, vx:-30, vy:-75, spin:-95},
-  {name:'frontLeg', sx:130, sy:348, sw:180, sh:240, vx:-95, vy:-70, spin:-130},
-  {name:'backLeg', sx:330, sy:348, sw:185, sh:240, vx:85, vy:-65, spin:115},
-  {name:'quiver', sx:440, sy:95, sw:175, sh:210, vx:110, vy:-85, spin:145},
-  {name:'cloak', sx:370, sy:225, sw:210, sh:215, vx:60, vy:-40, spin:75}
+ {name:'hood',poly:[[276,0],[527,0],[550,105],[475,183],[343,205],[275,150],[249,86]],vx:12,vy:-32,spin:36},
+ {name:'bow arm',poly:[[100,175],[249,150],[275,150],[343,205],[298,261],[170,277],[100,245]],vx:-48,vy:0,spin:-45},
+ {name:'quiver',poly:[[527,0],[700,0],[700,274],[548,274],[475,183],[550,105]],vx:40,vy:-12,spin:48},
+ {name:'torso',poly:[[343,205],[475,183],[548,274],[700,274],[700,380],[511,423],[310,404],[235,343],[170,277],[298,261]],vx:4,vy:0,spin:22},
+ {name:'front leg',poly:[[235,343],[310,404],[408,414],[383,642],[100,642],[100,277],[170,277]],vx:-35,vy:8,spin:-34},
+ {name:'back leg',poly:[[408,414],[511,423],[700,380],[700,642],[383,642]],vx:32,vy:9,spin:42}
 ];
+// Bow outline follows its outer curve; separate arrow uses its existing transparent asset.
+const bowPoly=[[0,0],[276,0],[249,86],[249,150],[100,175],[100,245],[100,277],[100,642],[0,642]];
+let pieces=[];
+function makePieces(){
+ const img=imgs.archer, W=img.width,H=img.height;
+ // Assign each opaque pixel to only one mask, avoiding duplicated rectangular slices.
+ const claimed=document.createElement('canvas');claimed.width=W;claimed.height=H;
+ const cc=claimed.getContext('2d');
+ for(const p of [{name:'bow',poly:bowPoly},...archerPieces]){
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
+  c.beginPath();p.poly.forEach(([x,y],i)=>i?c.lineTo(x*W/700,y*H/642):c.moveTo(x*W/700,y*H/642));c.closePath();c.save();c.clip();c.drawImage(img,0,0);c.restore();
+  c.globalCompositeOperation='destination-out';c.drawImage(claimed,0,0);c.globalCompositeOperation='source-over';cc.drawImage(cv,0,0);
+  const data=c.getImageData(0,0,W,H).data;let l=W,r=0,t=H,b=0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(data[(y*W+x)*4+3]>8){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y)}
+  if(r>l&&b>t)pieces.push({...p,img:cv,l,t,w:r-l+1,h:b-t+1});
+ }
+}
+function drawPart(p,dx,dy,rot,alpha){
+ const sc=base.h/imgs.archer.height, left=base.x-base.h*imgs.archer.width/imgs.archer.height/2,top=base.y-base.h;
+ ctx.save();ctx.globalAlpha=alpha;ctx.translate(left+(p.l+p.w/2)*sc+dx,top+(p.t+p.h/2)*sc+dy);ctx.rotate(rot);
+ ctx.drawImage(p.img,p.l,p.t,p.w,p.h,-p.w*sc/2,-p.h*sc/2,p.w*sc,p.h*sc);ctx.restore();
+}
 function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
 function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
 function lerp(a,b,t){ return a+(b-a)*t; }
@@ -132,7 +155,7 @@ function render(){
   const total = v('duration');
   const recoilEnd = 0.16;
   const shatterStart = 0.19;
-  const smokeStart = 0.43;
+  const smokeStart = 0.36;
   const fadeStart = 0.84;
   const ringAlpha = t < smokeStart ? 0.92*(1-clamp((t-0.33)/0.2,0,1)) : 0;
   const ash=scene.archerShadow; drawShadow(base.x+(ash.dx+ash.w/2)*unit,base.y+(ash.dy+ash.h/2)*unit,ash.w*unit,ash.h*unit,t<smokeStart ? 0.78 : 0.22);
@@ -141,61 +164,29 @@ function render(){
     const rt = clamp(t/recoilEnd,0,1);
     const recoil = rt < 1 ? Math.sin(rt*Math.PI)*v('recoil') : 0;
     const lift = rt < 1 ? -Math.sin(rt*Math.PI)*8 : 0;
-    const tint = clamp((t-0.03)/0.12,0,1);
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.translate(-recoil, lift);
-    drawImg('archer', base.x, base.y, base.h*(700/642), base.h, -Math.sin(rt*Math.PI)*0.02);
-    if(tint>0){
-      ctx.globalCompositeOperation='lighter';
-      ctx.globalAlpha = tint*0.45;
-      ctx.fillStyle='rgba(255,150,70,0.7)';
-      ctx.fillRect(base.x-160, base.y-280, 320, 300);
-    }
+    ctx.save();ctx.translate(-recoil,lift);
+    drawImg('archer',base.x,base.y,base.h*imgs.archer.width/imgs.archer.height,base.h,-Math.sin(rt*Math.PI)*0.02);
     ctx.restore();
-    if(t > 0.08) drawImpactSpark(base.x-10, base.y-110, clamp((t-0.08)/0.12,0,1));
   }
   if(t >= shatterStart){
-    const pt = clamp((t-shatterStart)/(fadeStart-shatterStart),0,1);
-    const grav = v('gravity');
-    const force = v('burst');
-    const bowSX=0,bowSY=0,bowSW=250,bowSH=590;
-    const bowScale = base.h/642;
-    const bowX0 = base.x-base.h*700/642/2, bowY0 = base.y-base.h;
-    const bowX = bowX0 - 26*pt;
-    const bowY = bowY0 + (v('bowFall')*pt*0.95) + grav*0.5*pt*pt*0.005;
-    const bowRot = (-12 + pt*v('bowSpin'))*Math.PI/180;
-    const fadeAlpha = 1-clamp((t-fadeStart)/(1-fadeStart),0,1);
-    drawClip('archer',bowSX,bowSY,bowSW,bowSH,bowX,bowY,bowSW*bowScale,bowSH*bowScale,bowRot,fadeAlpha);
-    const at = pt;
-    const arrowW = 118, arrowH = 22;
-    const arrowX = base.x-15 + 120*at;
-    const arrowY = base.y-184 - 24*at + v('arrowFall')*at*0.9 + grav*0.5*at*at*0.004;
-    const arrowRot = (-6 + at*v('arrowSpin'))*Math.PI/180;
-    ctx.save(); ctx.globalAlpha = fadeAlpha; ctx.translate(arrowX,arrowY); ctx.rotate(arrowRot); ctx.drawImage(imgs.arrow,-arrowW/2,-arrowH/2,arrowW,arrowH); ctx.restore();
-    archerPieces.forEach((p,i)=>{
-      const px = base.x-base.h*700/642/2 + p.sx*bowScale + (p.vx*(force/95))*pt;
-      const py = base.y-base.h + p.sy*bowScale + (p.vy*(force/95))*pt + grav*0.5*pt*pt*0.012;
-      const rot = (p.spin*pt)*Math.PI/180;
-      const dw = p.sw*bowScale, dh = p.sh*bowScale;
-      const alpha = fadeAlpha * (1 - clamp((t-fadeStart-0.02*i)/(1-fadeStart),0,1)*0.55);
-      drawClip('archer',p.sx,p.sy,p.sw,p.sh,px,py,dw,dh,rot,alpha);
-    });
-    ctx.save();
-    for(let i=0;i<12;i++){
-      const dt = pt;
-      const ang = i*0.62 + 0.3;
-      const speed = (28 + i*4) * (force/95);
-      const dx = base.x - 8 + Math.cos(ang)*speed*dt;
-      const dy = base.y - 100 + Math.sin(ang)*speed*dt + grav*dt*dt*0.012 + i*1.5;
-      const a = fadeAlpha*(1-dt*0.6);
-      ctx.fillStyle = i%3===0 ? `rgba(126,96,56,${a})` : i%3===1 ? `rgba(95,126,55,${a})` : `rgba(72,48,30,${a})`;
-      ctx.fillRect(dx,dy,4+(i%3),3+(i%2));
+    const seconds=(t-shatterStart)*total/1000;
+    const force=v('burst')/95, grav=v('gravity');
+    const alpha=1-clamp((t-0.43)/0.24,0,1);
+    const gearAlpha=1-clamp((t-0.58)/0.27,0,1);
+    for(const p of pieces){
+      if(p.name==='bow'){
+        drawPart(p,-22*seconds,Math.min(110,v('bowFall')*seconds+grav*seconds*seconds/2),-v('bowSpin')*seconds*Math.PI/180,gearAlpha);
+      }else{
+        const q=Math.min(seconds,0.65);
+        drawPart(p,p.vx*force*q, p.vy*force*q+grav*q*q/2,p.spin*force*q*Math.PI/180,alpha);
+      }
     }
-    ctx.restore();
+    const sc=base.h/imgs.archer.height, aw=264*sc,ah=49*sc;
+    const ax=base.x-45-45*seconds, ay=base.y-176+Math.min(165,v('arrowFall')*seconds+grav*seconds*seconds/2);
+    ctx.save();ctx.globalAlpha=gearAlpha;ctx.translate(ax,ay);ctx.rotate(v('arrowSpin')*seconds*Math.PI/180);ctx.drawImage(imgs.arrow,-aw/2,-ah/2,aw,ah);ctx.restore();
   }
   if(t >= smokeStart){
-    const st = clamp((t-smokeStart)/((v('smokeLinger')/total)),0,1);
+    const st = clamp((t-smokeStart)/Math.max(v('smokeLinger')/total,0.48),0,1);
     drawSmokeAndSkull(base.x, base.y, st);
   }
   ctx.drawImage(imgs.fg,0,0,canvas.width,canvas.height);
@@ -211,7 +202,7 @@ function tick(now){
   render();
   requestAnimationFrame(tick);
 }
-Promise.all(Object.entries(sources).map(([k,src])=>new Promise((resolve,reject)=>{ const img=new Image(); img.onload=()=>{imgs[k]=img; resolve();}; img.onerror=reject; img.src=src; }))).then(()=>{ ready=true; syncOutputs(); setState('Ready'); render(); requestAnimationFrame(tick); }).catch(()=>{ $('state').textContent='Asset load failed'; });
+Promise.all(Object.entries(sources).map(([k,src])=>new Promise((resolve,reject)=>{ const img=new Image(); img.onload=()=>{imgs[k]=img; resolve();}; img.onerror=reject; img.src=src; }))).then(()=>{ makePieces(); ready=true; syncOutputs(); setState('Ready'); render(); requestAnimationFrame(tick); }).catch(()=>{ $('state').textContent='Asset load failed'; });
 </script>
 </body>
 </html>
