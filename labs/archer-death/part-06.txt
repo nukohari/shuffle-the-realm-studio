@@ -15,7 +15,7 @@ $('reset').onclick=()=>{phase=0; playing=false; setState('Ready'); render();};
 $('play').onclick=()=>{ if(phase>=1) phase=0; playing=!playing; setState(playing?'Playing':'Paused'); };
 function setState(t){ $('state').textContent=t; $('play').textContent=playing?'Pause':'Play death'; }
 
-const scene = typeof COMBAT_SCENE !== 'undefined' ? COMBAT_SCENE : {"width":460,"height":294,"pixelRatio":2,"iron":{"x":44,"y":98,"w":130,"h":182},"ironShadow":{"x":57,"y":268,"w":104,"h":24},"archer":{"x":320,"y":285,"h":134},"archerShadow":{"dx":-48,"dy":-13,"w":96,"h":23},"ring":{"dx":0,"dy":0,"rx":30,"ry":8},"fade":{"y":256,"h":38}};
+const scene = typeof COMBAT_SCENE !== 'undefined' ? COMBAT_SCENE : {"width":460,"height":294,"pixelRatio":2,"iron":{"x":44,"y":98,"w":130,"h":182},"ironShadow":{"x":57,"y":268,"w":104,"h":24},"archer":{"x":320,"y":285,"h":134},"archerShadow":{"dx":-48,"dy":-13,"w":96,"h":23},"ring":{"dx":0,"dy":-6,"rx":30,"ry":7},"fade":{"y":256,"h":38}};
 const unit=scene.pixelRatio;
 const base = {x:scene.archer.x*unit,y:scene.archer.y*unit,h:scene.archer.h*unit};
 const archerPieces = [
@@ -136,7 +136,7 @@ function render(){
   const fadeStart = 0.84;
   const ringAlpha = t < smokeStart ? 0.92*(1-clamp((t-0.33)/0.2,0,1)) : 0;
   const ash=scene.archerShadow; drawShadow(base.x+(ash.dx+ash.w/2)*unit,base.y+(ash.dy+ash.h/2)*unit,ash.w*unit,ash.h*unit,t<smokeStart ? 0.78 : 0.22);
-  const ring=scene.ring; drawRing(base.x+ring.dx*unit,base.y+ring.dy*unit,ring.rx*unit,ring.ry*unit,ringAlpha);
+  const ring=scene.ring;
   if(t < shatterStart){
     const rt = clamp(t/recoilEnd,0,1);
     const recoil = rt < 1 ? Math.sin(rt*Math.PI)*v('recoil') : 0;
@@ -145,7 +145,7 @@ function render(){
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.translate(-recoil, lift);
-    drawImg('archer', base.x, base.y, base.h*(700/642), base.h, -0.02 + rt*0.02);
+    drawImg('archer', base.x, base.y, base.h*(700/642), base.h, -Math.sin(rt*Math.PI)*0.02);
     if(tint>0){
       ctx.globalCompositeOperation='lighter';
       ctx.globalAlpha = tint*0.45;
@@ -200,6 +200,7 @@ function render(){
   }
   ctx.drawImage(imgs.fg,0,0,canvas.width,canvas.height);
   ctx.drawImage(imgs.fade,0,scene.fade.y*unit,canvas.width,scene.fade.h*unit);
+  drawRing(base.x+ring.dx*unit,base.y+ring.dy*unit,ring.rx*unit,ring.ry*unit,ringAlpha);
 }
 function tick(now){
   if(playing && last){
