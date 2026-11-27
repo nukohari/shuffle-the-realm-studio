@@ -15,7 +15,9 @@ $('reset').onclick=()=>{phase=0; playing=false; setState('Ready'); render();};
 $('play').onclick=()=>{ if(phase>=1) phase=0; playing=!playing; setState(playing?'Playing':'Paused'); };
 function setState(t){ $('state').textContent=t; $('play').textContent=playing?'Pause':'Play death'; }
 
-const base = { x: 630, y: 390, h: 258 };
+const scene = typeof COMBAT_SCENE !== 'undefined' ? COMBAT_SCENE : {"width":460,"height":294,"pixelRatio":2,"iron":{"x":44,"y":98,"w":130,"h":182},"ironShadow":{"x":57,"y":268,"w":104,"h":24},"archer":{"x":320,"y":285,"h":134},"archerShadow":{"dx":-48,"dy":-13,"w":96,"h":23},"ring":{"dx":0,"dy":0,"rx":30,"ry":8},"fade":{"y":256,"h":38}};
+const unit=scene.pixelRatio;
+const base = {x:scene.archer.x*unit,y:scene.archer.y*unit,h:scene.archer.h*unit};
 const archerPieces = [
   {name:'hood', sx:255, sy:0, sw:210, sh:180, vx:20, vy:-105, spin:60},
   {name:'torso', sx:205, sy:155, sw:245, sh:205, vx:-30, vy:-75, spin:-95},
@@ -123,8 +125,8 @@ function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.drawImage(imgs.bg,0,0,canvas.width,canvas.height);
   if($('showIronbound').checked){
-    drawShadow(173, 456, 132, 34, 0.9);
-    drawImg('iron', 176, 433, 185, 260);
+    const sh=scene.ironShadow; drawShadow((sh.x+sh.w/2)*unit,(sh.y+sh.h/2)*unit,sh.w*unit,sh.h*unit,0.9);
+    const ir=scene.iron; drawImg('iron',(ir.x+ir.w/2)*unit,(ir.y+ir.h)*unit,ir.w*unit,ir.h*unit);
   }
   const t = phase;
   const total = v('duration');
@@ -133,8 +135,8 @@ function render(){
   const smokeStart = 0.43;
   const fadeStart = 0.84;
   const ringAlpha = t < smokeStart ? 0.92*(1-clamp((t-0.33)/0.2,0,1)) : 0;
-  drawShadow(base.x-8, base.y+66, 126, 30, t<smokeStart ? 0.78 : 0.22);
-  drawRing(base.x-8, base.y+62, 44, 14, ringAlpha);
+  const ash=scene.archerShadow; drawShadow(base.x+(ash.dx+ash.w/2)*unit,base.y+(ash.dy+ash.h/2)*unit,ash.w*unit,ash.h*unit,t<smokeStart ? 0.78 : 0.22);
+  const ring=scene.ring; drawRing(base.x+ring.dx*unit,base.y+ring.dy*unit,ring.rx*unit,ring.ry*unit,ringAlpha);
   if(t < shatterStart){
     const rt = clamp(t/recoilEnd,0,1);
     const recoil = rt < 1 ? Math.sin(rt*Math.PI)*v('recoil') : 0;
@@ -159,7 +161,7 @@ function render(){
     const force = v('burst');
     const bowSX=0,bowSY=0,bowSW=250,bowSH=590;
     const bowScale = base.h/642;
-    const bowX0 = base.x-170, bowY0 = base.y-255;
+    const bowX0 = base.x-base.h*700/642/2, bowY0 = base.y-base.h;
     const bowX = bowX0 - 26*pt;
     const bowY = bowY0 + (v('bowFall')*pt*0.95) + grav*0.5*pt*pt*0.005;
     const bowRot = (-12 + pt*v('bowSpin'))*Math.PI/180;
@@ -172,8 +174,8 @@ function render(){
     const arrowRot = (-6 + at*v('arrowSpin'))*Math.PI/180;
     ctx.save(); ctx.globalAlpha = fadeAlpha; ctx.translate(arrowX,arrowY); ctx.rotate(arrowRot); ctx.drawImage(imgs.arrow,-arrowW/2,-arrowH/2,arrowW,arrowH); ctx.restore();
     archerPieces.forEach((p,i)=>{
-      const px = base.x-150 + p.sx*bowScale + (p.vx*(force/95))*pt;
-      const py = base.y-250 + p.sy*bowScale + (p.vy*(force/95))*pt + grav*0.5*pt*pt*0.012;
+      const px = base.x-base.h*700/642/2 + p.sx*bowScale + (p.vx*(force/95))*pt;
+      const py = base.y-base.h + p.sy*bowScale + (p.vy*(force/95))*pt + grav*0.5*pt*pt*0.012;
       const rot = (p.spin*pt)*Math.PI/180;
       const dw = p.sw*bowScale, dh = p.sh*bowScale;
       const alpha = fadeAlpha * (1 - clamp((t-fadeStart-0.02*i)/(1-fadeStart),0,1)*0.55);
@@ -194,10 +196,10 @@ function render(){
   }
   if(t >= smokeStart){
     const st = clamp((t-smokeStart)/((v('smokeLinger')/total)),0,1);
-    drawSmokeAndSkull(base.x-6, base.y+44, st);
+    drawSmokeAndSkull(base.x, base.y, st);
   }
   ctx.drawImage(imgs.fg,0,0,canvas.width,canvas.height);
-  ctx.drawImage(imgs.fade,0,canvas.height-44,canvas.width,44);
+  ctx.drawImage(imgs.fade,0,scene.fade.y*unit,canvas.width,scene.fade.h*unit);
 }
 function tick(now){
   if(playing && last){
