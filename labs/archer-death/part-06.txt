@@ -120,55 +120,68 @@ function skull(x,y,t){if(t<=0||t>=1)return;let a=images.skullArt,s=values.skullS
 
 function drawSmokeAndSkull(x,y,t){images.smokeArt=imgs.smoke;images.skullArt=imgs.skull;values.smokeSize=v('smokeScale');values.skullSize=v('skullRise');ctx.save();ctx.translate(x,y);ctx.scale(unit,unit);smoke(0,0,t);skull(0,0,clamp((t-.22)/.78,0,1));ctx.restore();}
 
+// Raider v8 timing and collapse curve, applied to the Archer's own body pieces.
 function render(){
-  if(!ready) return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.drawImage(imgs.bg,0,0,canvas.width,canvas.height);
-  if($('showIronbound').checked){
-    const sh=scene.ironShadow; drawShadow((sh.x+sh.w/2)*unit,(sh.y+sh.h/2)*unit,sh.w*unit,sh.h*unit,0.9);
-    const ir=scene.iron; drawImg('iron',(ir.x+ir.w/2)*unit,(ir.y+ir.h)*unit,ir.w*unit,ir.h*unit);
-  }
-  const t = phase;
-  const total = v('duration');
-  const recoilEnd = 0.16;
-  const shatterStart = 0.16;
-  const smokeStart = 770/total;
-  const fadeStart = (770+v("smokeLinger"))/total;
-  const ringAlpha = t < smokeStart ? 0.92*(1-clamp((t-0.33)/0.2,0,1)) : 0;
-  const ash=scene.archerShadow; drawShadow(base.x+(ash.dx+ash.w/2)*unit,base.y+(ash.dy+ash.h/2)*unit,ash.w*unit,ash.h*unit,t<smokeStart ? 0.78 : 0.22);
-  const ring=scene.ring;
-  if(t < shatterStart){
-    const rt = clamp(t/recoilEnd,0,1);
-    const recoil = rt < 1 ? Math.sin(rt*Math.PI)*v('recoil') : 0;
-    const lift = rt < 1 ? -Math.sin(rt*Math.PI)*8 : 0;
-    ctx.save();ctx.translate(-recoil,lift);
-    drawImg('archer',base.x,base.y,base.h*imgs.archer.width/imgs.archer.height,base.h,-Math.sin(rt*Math.PI)*0.02);
-    ctx.restore();
-  }
-  if(t >= shatterStart){
-    const seconds=(t-shatterStart)*total/1000;
-    const force=v('burst')/95, grav=v('gravity');
-    const fx=clamp((t-smokeStart)*total/v("smokeLinger"),0,1); const alpha=1-ease(fx/.32);
-    const gearAlpha=1-ease(fx/.55);
-    for(const p of pieces){
-      if(p.name==='bow'){
-        drawPart(p,-22*seconds,Math.min(110,v('bowFall')*seconds+grav*seconds*seconds/2),-v('bowSpin')*seconds*Math.PI/180,gearAlpha);
-      }else{
-        const q=Math.min(seconds,0.65);
-        drawPart(p,p.vx*force*q, p.vy*force*q+grav*q*q/2,p.spin*force*q*Math.PI/180,alpha);
-      }
-    }
-    const sc=base.h/imgs.archer.height, aw=264*sc,ah=49*sc;
-    const ax=base.x-45-45*seconds, ay=base.y-176+Math.min(165,v('arrowFall')*seconds+grav*seconds*seconds/2);
-    ctx.save();ctx.globalAlpha=gearAlpha;ctx.translate(ax,ay);ctx.rotate(v('arrowSpin')*seconds*Math.PI/180);ctx.drawImage(imgs.arrow,-aw/2,-ah/2,aw,ah);ctx.restore();
-  }
-  if(t >= smokeStart){
-    const st = clamp((t-smokeStart)*total/v("smokeLinger"),0,1);
-    drawSmokeAndSkull(base.x-22*unit, base.y-13.5*unit, st);
-  }
-  ctx.drawImage(imgs.fg,0,0,canvas.width,canvas.height);
-  ctx.drawImage(imgs.fade,0,scene.fade.y*unit,canvas.width,scene.fade.h*unit);
-  drawRing(base.x+ring.dx*unit,base.y+ring.dy*unit,ring.rx*unit,ring.ry*unit,ringAlpha);
+ if(!ready)return;
+ ctx.setTransform(unit,0,0,unit,0,0);
+ ctx.clearRect(0,0,scene.width,scene.height);
+ ctx.drawImage(imgs.bg,0,0,scene.width,scene.height);
+ ctx.setTransform(1,0,0,1,0,0);
+ if($('showIronbound').checked){
+   const sh=scene.ironShadow;drawShadow((sh.x+sh.w/2)*unit,(sh.y+sh.h/2)*unit,sh.w*unit,sh.h*unit,.9);
+   const ir=scene.iron;drawImg('iron',(ir.x+ir.w/2)*unit,(ir.y+ir.h)*unit,ir.w*unit,ir.h*unit);
+ }
+ const smokeMs=v('smokeLinger'), fallMs=Math.max(100,v('duration')-120-smokeMs-220), ms=phase*v('duration');
+ const q=clamp(ms/fallMs,0,1),fx=clamp((ms-fallMs-120)/smokeMs,0,1),fade=clamp((ms-fallMs-120-smokeMs)/220,0,1);
+ const recoil=Math.sin(Math.PI*clamp(q/.16,0,1))*(q<.16?1:0),kneel=ease((q-.13)/.32),fall=ease((q-.33)/.57),settle=ease((q-.88)/.12),split=ease((q-.38)/.55);
+ const ground=base.y-13.5*unit;
+ const hipX=base.x+unit*(4*recoil-22*fall),hipY=ground+unit*(lerp(-58,-13,fall)+8*kneel*(1-fall));
+ const angle=(7*recoil-78*fall-12*kneel*(1-fall))*Math.PI/180;
+ const alpha=1-ease(fx/.32),gearAlpha=(1-fade)*(1-ease(fx/.55));
+ const ash=scene.archerShadow;
+ drawShadow(hipX+(ash.dx+ash.w/2)*unit,base.y+(ash.dy+ash.h/2)*unit,ash.w*unit,ash.h*unit,(1-fade)*alpha);
+ const sc=base.h/imgs.archer.height, left=base.x-imgs.archer.width*sc/2, top=base.y-base.h;
+ // Pivot near the pelvis; rotate connected sprite regions as one body, then separate toward the floor.
+ const originX=base.x,originY=ground-58*unit;
+ const offsets={'hood':[-32,-5,-18],'bow arm':[-38,8,-25],'quiver':[14,-17,-32],'torso':[0,0,0],'front leg':[-7,6,-28],'back leg':[31,5,32]};
+ function transformPart(p,theta,x,y,spread,opacity){
+   const cx=left+(p.l+p.w/2)*sc,cy=top+(p.t+p.h/2)*sc,dx=cx-originX,dy=cy-originY;
+   const nx=x+dx*Math.cos(theta)-dy*Math.sin(theta),ny=y+dx*Math.sin(theta)+dy*Math.cos(theta);
+   const o=offsets[p.name]||[0,0,0]; const strength=v('burst')/65;
+   drawPart(p,nx-cx+o[0]*spread*unit*strength,ny-cy+o[1]*spread*unit,theta+o[2]*spread*Math.PI/180,opacity);
+ }
+ if(q===0)drawImg('archer',base.x,base.y,base.h*imgs.archer.width/imgs.archer.height,base.h);
+ else{
+   for(const name of ['back leg','quiver','front leg','torso','hood','bow arm']){
+     const p=pieces.find(p=>p.name===name);if(p)transformPart(p,angle,hipX,hipY,split,alpha);
+   }
+   const bow=pieces.find(p=>p.name==='bow');
+   if(bow){
+     if(q<.27)transformPart(bow,angle,hipX,hipY,0,alpha);
+     else{
+       const release=ease((q-.27)/.58);
+       const cx=left+(bow.l+bow.w/2)*sc,cy=top+(bow.t+bow.h/2)*sc;
+       const k=ease((.27-.13)/.32),a=-12*k*Math.PI/180;
+       const dx=cx-originX,dy=cy-originY;
+       const sx=base.x+dx*Math.cos(a)-dy*Math.sin(a),sy=ground-58*unit+8*k*unit+dx*Math.sin(a)+dy*Math.cos(a);
+       const rot=lerp(a,-1.45,release),endX=base.x-69*unit,endY=ground-7*unit-Math.abs(Math.sin(rot))*bow.w*sc/2-Math.abs(Math.cos(rot))*bow.h*sc/2;
+       drawPart(bow,lerp(sx,endX,release)-cx,lerp(sy,endY,release)-Math.sin(Math.PI*release)*8*unit-cy,rot,gearAlpha);
+     }
+   }
+   if(q>=.27){
+     const release=ease((q-.27)/.58),aw=264*sc,ah=49*sc;
+     ctx.save();ctx.globalAlpha=gearAlpha;ctx.translate(lerp(base.x-45,base.x+24*unit,release),lerp(base.y-176,ground-7*unit,release)-Math.sin(Math.PI*release)*8*unit);ctx.rotate(lerp(0,.14,release));ctx.drawImage(imgs.arrow,-aw/2,-ah/2,aw,ah);ctx.restore();
+   }
+ }
+ // Identical original Raider effect coordinates and logical-canvas transform.
+ images.smokeArt=imgs.smoke;images.skullArt=imgs.skull;
+ values.smokeSize=v('smokeScale');values.skullSize=v('skullRise');
+ ctx.setTransform(unit,0,0,unit,0,0);
+ smoke(hipX/unit,ground/unit,fx);skull(hipX/unit,ground/unit,clamp((fx-.22)/.78,0,1));
+ ctx.drawImage(imgs.fg,0,0,scene.width,scene.height);
+ ctx.drawImage(imgs.fade,0,scene.fade.y,scene.width,scene.fade.h);
+ ctx.setTransform(1,0,0,1,0,0);
+ if(q===0){const ring=scene.ring;drawRing(base.x+ring.dx*unit,base.y+ring.dy*unit,ring.rx*unit,ring.ry*unit,.92);}
 }
 function tick(now){
   if(playing && last){
