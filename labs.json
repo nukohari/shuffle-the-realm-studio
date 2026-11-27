@@ -10,5 +10,11 @@
     "title": "Death Animation v6 — Raider Collapse",
     "path": "labs/archer-death",
     "parts": 7
+  },
+  {
+    "character": "Goblin Shaman",
+    "title": "Combined Animation Lab v1",
+    "path": "labs/shaman-combined",
+    "parts": 16
   }
 ]
