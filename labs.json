@@ -16,5 +16,11 @@
     "title": "Combined Animation Lab v4",
     "path": "labs/shaman-combined",
     "parts": 16
+  },
+  {
+    "character": "Goblin King",
+    "title": "Combined Animation Lab v1",
+    "path": "labs/king-combined",
+    "parts": 1
   }
 ]
