@@ -58,5 +58,11 @@
     "title": "Illustrated Slash HD v6",
     "path": "labs/ironbound-slash-hd",
     "parts": 8
+  },
+  {
+    "character": "Ironbound",
+    "title": "Clean Idle v1",
+    "path": "labs/ironbound-clean-idle",
+    "parts": 1
   }
 ]
