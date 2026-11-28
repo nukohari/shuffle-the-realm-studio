@@ -46,5 +46,11 @@
     "title": "Pivot Slash — Full Artwork Test v4",
     "path": "labs/ironbound-slash-textured",
     "parts": 1
+  },
+  {
+    "character": "Ironbound",
+    "title": "Illustrated Slash v5",
+    "path": "labs/ironbound-slash-illustrated",
+    "parts": 1
   }
 ]
