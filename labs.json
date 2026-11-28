@@ -28,5 +28,11 @@
     "title": "Combined Animation Lab v21",
     "path": "labs/bone-maw-combined",
     "parts": 1
+  },
+  {
+    "character": "Ironbound",
+    "title": "Redesign & Idle Preview v1",
+    "path": "labs/ironbound-redesign",
+    "parts": 1
   }
 ]
