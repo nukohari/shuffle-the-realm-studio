@@ -31,38 +31,8 @@
   },
   {
     "character": "Ironbound",
-    "title": "Interactive Rig Assembly v6",
-    "path": "labs/ironbound-redesign",
-    "parts": 1
-  },
-  {
-    "character": "Ironbound",
-    "title": "Pivot / Keyframe Editor v1",
-    "path": "labs/ironbound-pivot",
-    "parts": 1
-  },
-  {
-    "character": "Ironbound",
-    "title": "Pivot Slash — Full Artwork Test v4",
-    "path": "labs/ironbound-slash-textured",
-    "parts": 1
-  },
-  {
-    "character": "Ironbound",
-    "title": "Illustrated Slash v5",
-    "path": "labs/ironbound-slash-illustrated",
-    "parts": 1
-  },
-  {
-    "character": "Ironbound",
-    "title": "Illustrated Slash HD v6",
-    "path": "labs/ironbound-slash-hd",
-    "parts": 8
-  },
-  {
-    "character": "Ironbound",
-    "title": "Clean Idle v1",
-    "path": "labs/ironbound-clean-idle",
+    "title": "Combined Animation Lab v1",
+    "path": "labs/ironbound-combined",
     "parts": 1
   }
 ]
