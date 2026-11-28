@@ -40,5 +40,11 @@
     "title": "Pivot / Keyframe Editor v1",
     "path": "labs/ironbound-pivot",
     "parts": 1
+  },
+  {
+    "character": "Ironbound",
+    "title": "Pivot Slash — Textured Preview v3",
+    "path": "labs/ironbound-slash-textured",
+    "parts": 1
   }
 ]
