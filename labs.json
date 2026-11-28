@@ -34,5 +34,11 @@
     "title": "Interactive Rig Assembly v6",
     "path": "labs/ironbound-redesign",
     "parts": 1
+  },
+  {
+    "character": "Ironbound",
+    "title": "Pivot / Keyframe Editor v1",
+    "path": "labs/ironbound-pivot",
+    "parts": 1
   }
 ]
