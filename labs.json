@@ -52,5 +52,11 @@
     "title": "Illustrated Slash v5",
     "path": "labs/ironbound-slash-illustrated",
     "parts": 1
+  },
+  {
+    "character": "Ironbound",
+    "title": "Illustrated Slash HD v6",
+    "path": "labs/ironbound-slash-hd",
+    "parts": 8
   }
 ]
